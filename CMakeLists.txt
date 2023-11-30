@@ -12,10 +12,11 @@ endif()
 project ("TestTask")
 
 # Добавьте источник в исполняемый файл этого проекта.
-add_executable (TestTask "TestTask.cpp" "TestTask.h")
+add_executable (TestTask "TestTask.cpp" "TestTask.h" "FileParser.h" "FileParser.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET TestTask PROPERTY CXX_STANDARD 20)
 endif()
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
+#add_compile_options(/Zm1000)
