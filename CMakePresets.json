@@ -64,18 +64,24 @@
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "gcc-11",
+                "CMAKE_CXX_COMPILER": "g++-11"
             },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Linux"
             },
-            "vendor": {
-                "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
-                    "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
-                }
-            }
+          "vendor": {
+              "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+                  "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
+              },
+              "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                  "hostOS": [ "Linux" ]
+              }
+          }
         },
         {
             "name": "macos-debug",

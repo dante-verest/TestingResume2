@@ -20,3 +20,13 @@ endif()
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
 #add_compile_options(/Zm1000)
+#add_compile_options(/fp:contract)
+
+if(MSVC)
+
+else()
+add_compile_options(-std=c++20)
+add_compile_options(-std=gnu++20)
+add_compile_options(-Wall -Wextra -W -ansi -pedantic -g -ggdb -c -o)
+#add_compile_options(-O0)
+endif()
