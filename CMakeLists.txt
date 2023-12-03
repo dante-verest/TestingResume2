@@ -19,19 +19,12 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
-#add_compile_options(/Zm1000)
-#add_compile_options(/fp:contract)
 
-if(Iconv_FOUND)
-#include_directories(Iconv_INCLUDE_DIR)
-endif()
+include_directories("${CMAKE_SOURCE_DIR}/libs/libiconv-1.17/include")
+find_library(LIBICONV libiconv "${CMAKE_SOURCE_DIR}/libs/libiconv-1.17/lib/.libs")
+target_link_libraries(TestTask &{LIBICONV})
 
-if(MSVC)
-
-else()
-add_compile_options(-std=c++20)
+if(!MSVC)
 add_compile_options(-std=gnu++20)
 add_compile_options(-Wall -Wextra -W -ansi -pedantic -g -ggdb -c -o)
-add_compile_options(-finput-charset="UTF-16")
-#add_compile_options(-O0)
 endif()

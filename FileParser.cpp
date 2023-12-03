@@ -1,6 +1,8 @@
 ﻿#include "FileParser.h"
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
+#include "iconv.h"
 
 Files::FileParser::FileParser() 
 {
@@ -72,7 +74,6 @@ void Files::FileParser::ShowFileData()
 		std::cout << "File data:" << std::endl;
 		for (auto& string : m_fileData)
 			std::cout << '\t' << string << std::endl;
-		}
 	}
 };
 void Files::FileParser::Clear()
@@ -117,7 +118,7 @@ void Files::FileParser::DeleteWords(int argc, const char** argv)
 #elif __linux__
 					utf8str = argv[i];
 #endif
-					argvLength = utf8str.length();
+					argvLength = utf8str.size();
 					startPos = fileString->find(utf8str);
 					if (startPos == String::npos)
 						continue;
@@ -140,7 +141,7 @@ void Files::FileParser::DeleteEmptyStrings()
 	if (IsYouReadTheFileData())
 	{
 		for (auto fileString = m_fileData.begin(); fileString != m_fileData.end(); )
-			if (fileString->find_first_not_of(' ') == String::npos)
+			if (fileString->find_first_not_of(" \t\n\v\f\r") == String::npos)
 				fileString = m_fileData.erase(fileString);
 			else
 				++fileString;
@@ -151,31 +152,19 @@ void Files::FileParser::SortFileStrings(bool aIsAscending)
 	std::locale loc;
 	if (IsYouReadTheFileData())
 	{
-#ifdef _WIN32
-		loc = std::locale("");
-		auto toLower = [](auto ch, const std::locale& loc) {
-			return std::tolower<decltype(ch)>(ch, loc);
+		libiconv_t conv = iconv_open("UTF-8", "CP1251");
+		auto toLower = [&](String s, const std::locale& loc) {
+			std::transform(s.begin(), s.end(), s.begin(),
+				[&loc](unsigned char c) { return std::tolower(c, loc); });
+			return s;
 		};
-		std::sort(m_fileData.begin(), m_fileData.end(), [&](const auto& element1, const auto& element2) {
-			const auto result = std::mismatch(element1.cbegin(), element1.cend(), element2.cbegin(), element2.cend(),
-			[&](const auto& char1, const auto& char2) {
-					return toLower(char1, loc) == toLower(char2, loc);
-				});
-		if (aIsAscending)
-			return (result.second != element2.cend()) && (result.first == element1.cend() ||
-				toLower(*result.first, loc) < toLower(*result.second, loc));
-		else
-			return (result.second != element2.cend()) && (result.first == element1.cend() ||
-				toLower(*result.first, loc) > toLower(*result.second, loc));
-			});
-#elif __linux__
-		std::sort(m_fileData.begin(), m_fileData.end(), [&aIsAscending](const auto& element1, const auto& element2) {
+		std::sort(m_fileData.begin(), m_fileData.end(), [&](auto& element1, auto& element2) {
 			if (aIsAscending)
-				return (strcasecmp(element1.c_str(), element2.c_str()) < 0);
+				return (toLower(element1, loc) < toLower(element2, loc));
 			else
-				return (strcasecmp(element1.c_str(), element2.c_str()) > 0);
-			});
-#endif
-	}
+				return (toLower(element1, loc) > toLower(element2, loc));
+		});
+		iconv_close(conv);
+	};
 };
 

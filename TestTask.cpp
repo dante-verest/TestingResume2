@@ -1,7 +1,4 @@
 ﻿// TestTask.cpp: определяет точку входа для приложения.
-//
-
-#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 
 #include "TestTask.h"
 
@@ -14,7 +11,7 @@ int main(int argc, char* argv[])
 	file->ReadFromFile();
 	file->CloseFile();
 	file->ShowFileData();
-	file->DeleteWords(argc_, argv_);
+	file->DeleteWords(argc, argv);
 	file->DeleteEmptyStrings();
 	file->SortFileStrings();
 	file->ShowFileData();
