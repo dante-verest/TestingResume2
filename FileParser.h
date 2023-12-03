@@ -1,10 +1,16 @@
-#pragma once
+п»ї#pragma once
 #include <fstream>
 #include <string>
 #include <vector>
 #include <clocale>
+#include <cstring>
+//#include <wchar.h>
+//#include <charconv>
+#include <memory>
 #ifdef _WIN32
+#pragma warning(disable: 4996)
 #include <codecvt>
+#include <Windows.h>
 #endif
 
 namespace Files
@@ -16,39 +22,42 @@ namespace Files
 		using String = std::string;
 		using FileStream = std::fstream;
 	private:
-		char* m_pFileName;
+		const char* m_pFileName;
 		std::vector<String> m_fileData;
 		FileStream m_file;
 	public:
 		// ctors
-		FileParser() = default;
+		FileParser();
 		FileParser(const char* aFileName,
 			std::ios::openmode mode = std::ios_base::in | std::ios_base::out);
 		// dtor
 		~FileParser();
 
-		// открытие файла
+		// РѕС‚РєСЂС‹С‚РёРµ С„Р°Р№Р»Р°
 		void OpenFile(const char* aFileName, 
 			std::ios::openmode mode = std::ios_base::in | std::ios_base::out);
-		// закрытие файла
+		// Р·Р°РєСЂС‹С‚РёРµ С„Р°Р№Р»Р°
 		void CloseFile();
-		// вывести данные на экран
+		// РѕС‡РёСЃС‚РёС‚СЊ Р±СѓС„РµСЂ
+		void Clear();
+		// РІС‹РІРµСЃС‚Рё РґР°РЅРЅС‹Рµ РЅР° СЌРєСЂР°РЅ
 		void ShowFileData();
-		// записать данные в файл из буфера
+		// Р·Р°РїРёСЃР°С‚СЊ РґР°РЅРЅС‹Рµ РІ С„Р°Р№Р» РёР· Р±СѓС„РµСЂР°
 		void WriteToFile();
-		// вставить новые данные в буфер
-		//void SetDataToFile(std::string aNewString);
-		// прочесть файл в буфер
+		// РїСЂРѕС‡РµСЃС‚СЊ С„Р°Р№Р» РІ Р±СѓС„РµСЂ
 		void ReadFromFile();
-		// получить прочитанные данные файла из буфера
-		//std::vector<std::string>& GetDataFromFile();
-		// удалить слово в содержимом файла
-		void DeleteWord(int argc, char* argv[]);
-		// отсортировать строки содержимого файла
+		// СѓРґР°Р»РёС‚СЊ РїСѓСЃС‚С‹Рµ СЃС‚СЂРѕРєРё
+		void DeleteEmptyStrings();
+		// СѓРґР°Р»РёС‚СЊ СЃР»РѕРІРѕ РІ СЃРѕРґРµСЂР¶РёРјРѕРј С„Р°Р№Р»Р°
+		void DeleteWords(int argc, const char** argv);
+		// РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°С‚СЊ СЃС‚СЂРѕРєРё СЃРѕРґРµСЂР¶РёРјРѕРіРѕ С„Р°Р№Р»Р°
 		void SortFileStrings(bool aIsAscending = true);
 	private:
 		bool IsYourFileOpen();
 		bool IsYouReadTheFileData();
-		String UTF8toString(const String& utf8str, const std::locale& loc);
+#ifdef _WIN32
+		String ANSItoUTF8(const String& ansistr, const std::locale& loc);
+		String UTF8toANSI(const String& utf8str, const std::locale& loc);
+#endif
 	};
 }

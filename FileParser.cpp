@@ -1,27 +1,36 @@
-#include "FileParser.h"
+ï»¿#include "FileParser.h"
 #include <iostream>
 #include <algorithm>
-#include <cstring>
 
 Files::FileParser::FileParser() 
 	: m_pFileName(nullptr)
-	, m_file()
 {
-	std::setlocale(LC_ALL, "russian");
+	if (m_file.is_open())
+		m_file.close();
 };
 Files::FileParser::FileParser(const char* aFileName,
-	std::ios::openmode mode = std::ios_base::in | std::ios_base::out) 
+	std::ios::openmode mode) 
 	: m_pFileName(aFileName)
-	, m_file(aFileName, mode)
 {
-	std::setlocale(LC_ALL, "russian");
+	if (m_file.is_open())
+		m_file.close();
+	else
+		m_file = FileStream(aFileName, mode);
 };
 
 Files::FileParser::~FileParser()
 {
 	if (m_file.is_open())
 		m_file.close();
-	std::cout << "Âûïîëíåíî!" << std::endl;
+	//std::cout << std::setlocale(LC_ALL, "ru_RU.CP1251") << std::endl;
+	//std::wcout << L"\xEF\xBB\xBF\xD0\xBF\xD1\x80\xD0\xBE\xD0\xB2\xD0\xB5\xD1\x80\xD0\xBA\xD0\xB0";
+#ifdef _WIN32
+	//std::cout << UTF8toANSI(std::string("Ð’Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¾!"), std::locale("")) << std::endl;
+	std::wcout << L"Ð’Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¾!" << std::endl;
+#elif __linux__
+	std::cout << "Ð’Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¾!" << std::endl;
+#endif
+	//wprintf("Ð’Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¾!");
 };
 
 bool Files::FileParser::IsYourFileOpen()
@@ -44,22 +53,43 @@ bool Files::FileParser::IsYouReadTheFileData()
 		return false;
 	}
 };
-Files::FileParser::String UTF8toString(const Files::FileParser::String& utf8str, const std::locale& loc)
+#ifdef _WIN32
+Files::FileParser::String Files::FileParser::
+ANSItoUTF8(const Files::FileParser::String& ansistr, const std::locale& loc)
+{
+	// ANSI to UTF-8
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> wconv;
+	std::wstring utf16str = std::wstring(ansistr.begin(), ansistr.end());
+	return wconv.to_bytes(utf16str);
+	// wstring to string
+	//std::vector<char> buf(wstr.size());
+	//std::use_facet<std::ctype<wchar_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', buf.data());
+	//return std::string(buf.data(), buf.size());
+};
+Files::FileParser::String Files::FileParser::
+UTF8toANSI(const Files::FileParser::String& utf8str, const std::locale& loc)
 {
 	// UTF-8 to wstring
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> wconv;
-	std::wstring wstr = wconv.from_bytes(utf8str);
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> wConverter;
+	std::wstring wstr = wConverter.from_bytes(utf8str);
 	// wstring to string
 	std::vector<char> buf(wstr.size());
 	std::use_facet<std::ctype<wchar_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', buf.data());
 	return std::string(buf.data(), buf.size());
-}
+};
+#endif
 
-
-void Files::FileParser::OpenFile(const char* aFileName, 
-	std::ios::openmode mode = std::ios_base::in | std::ios_base::out)
+void Files::FileParser::OpenFile(const char* aFileName,
+	std::ios::openmode mode)
 {
-	this->FileParser::FileParser(aFileName, mode);
+	if (m_file.is_open())
+	{
+		m_file.close();
+		m_file.open(aFileName, mode);
+	}
+	else
+		m_file.open(aFileName, mode);
+
 };
 void Files::FileParser::CloseFile()
 {
@@ -69,8 +99,25 @@ void Files::FileParser::CloseFile()
 void Files::FileParser::ShowFileData()
 {
 	if (IsYouReadTheFileData())
-		for (const auto& string : m_fileData)
-			std::cout << string << std::endl;
+	{
+		std::cout << "File data: " << std::endl;
+		for (auto& string : m_fileData)
+		{
+#ifdef _WIN32
+			//string = UTF8toANSI(string, std::locale(".1251"));
+			//std::wcout << L'\t' << std::wstring(string.begin(), string.end()) << std::endl;
+			std::cout << '\t' << string << std::endl;
+#elif __linux__
+			std::cout << '\t' << string << std::endl;
+#endif
+		}
+		std::cout << std::endl;
+	}
+};
+void Files::FileParser::Clear()
+{
+	if (IsYouReadTheFileData())
+		m_fileData.clear();
 };
 void Files::FileParser::ReadFromFile()
 {
@@ -78,7 +125,12 @@ void Files::FileParser::ReadFromFile()
 	if (IsYourFileOpen())
 	{
 		while (std::getline(m_file, fileString, '\n'))
+		{
+#ifdef _WIN32
+			//m_fileData.push_back(ANSItoUTF8(fileString, std::locale("")));
+#endif
 			m_fileData.push_back(fileString);
+		}
 	}
 };
 void Files::FileParser::WriteToFile()
@@ -87,53 +139,90 @@ void Files::FileParser::WriteToFile()
 	for (const auto& string : m_fileData)
 		m_file << string << std::endl;
 };
-void Files::FileParser::DeleteWord(int argc, char* argv[])
+void Files::FileParser::DeleteWords(int argc, const char** argv)
 {
+	std::string utf8str;
 	std::size_t startPos = 0, i = 0, argvLength = 0;
 	if (IsYouReadTheFileData())
 	{
-		for (const auto& fileString : m_fileData)
+		for (auto fileString = m_fileData.begin(); fileString != m_fileData.end(); ++fileString)
 		{
-			// ïðåäïîëàãàåòñÿ, ÷òî ôàéë â Linux è Windows çàïèñàí â UTF-8
+			// Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÑ‚ÑÑ, Ñ‡Ñ‚Ð¾ Ñ„Ð°Ð¹Ð» Ð² Linux Ð¸ Windows Ð·Ð°Ð¿Ð¸ÑÐ°Ð½ Ð² UTF-8
 #ifdef _WIN32
-			fileString = utf8_to_string(fileString, std::locale(".1251"));
+			//*fileString = UTF8toString(fileString->data(), std::locale(".1251"));
 #endif
 			if (argc > 1)
 			{
 				for (i = 0; i < argc; i++)
 				{
+#ifdef _WIN32
+					//char str[100];
+					//wchar_t wstr[50];
 					argvLength = strnlen(argv[i], 100);
-					startPos = fileString.find(argv[i]);
+					std::unique_ptr<char> str = std::make_unique<char>(argvLength);
+					std::unique_ptr<wchar_t> wstr = std::make_unique<wchar_t>(argvLength);
+					MultiByteToWideChar(1251, MB_PRECOMPOSED, argv[i], -1, wstr.get(), sizeof(argvLength) / sizeof(wstr.get()[0]));
+					WideCharToMultiByte(CP_UTF8, 0, wstr.get(), -1, str.get(), sizeof(argvLength) / sizeof(str.get()[0]), 0, 0);
+					//utf8str = UTF8toANSI(utf8str, std::locale(".1251"));
+					std::cout << "\t\targv[i] = " << str << std::endl;
+					utf8str = str.get();
+					std::cout << "\t\tutf8str = " << utf8str << std::endl;
+					//utf8str = ANSItoUTF8(utf8str, std::locale(""));
+					//*fileString = ANSItoUTF8(fileString->data(), std::locale(""));
+#elif __linux__
+					utf8str = argv[i];
+#endif
+					argvLength = utf8str.length();
+					startPos = fileString->find(utf8str);
 					if (startPos == String::npos)
 						continue;
 					else
 						while (startPos != String::npos)
 						{
-							if (std::isspace(fileString.at(startPos + argvLength)))
-								fileString.erase(startPos, argvLength + 1);
+							if (std::isspace(fileString->at(startPos + argvLength)))
+								fileString->erase(startPos, argvLength + 1);
 							else
-								fileString.erase(startPos, argvLength);
-							startPos = fileString.find(argv[i], startPos + argvLength);
+								fileString->erase(startPos, argvLength);
+							startPos = fileString->find(utf8str, startPos + argvLength);
 						};
 				}
 			}
-			if (fileString.find_first_not_of(' ') != String::npos)
-				fileData.push_back(fileString);
 		}
+	}
+};
+void Files::FileParser::DeleteEmptyStrings()
+{
+	if (IsYouReadTheFileData())
+	{
+		for (auto fileString = m_fileData.begin(); fileString != m_fileData.end(); )
+			if (fileString->find_first_not_of(' ') == String::npos)
+				fileString = m_fileData.erase(fileString);
+			else
+				++fileString;
 	}
 };
 void Files::FileParser::SortFileStrings(bool aIsAscending)
 {
+	std::locale loc;
+#ifdef _WIN32
+	loc = std::locale("");
+#elif __linux__
+	//loc = std::locale("ru_RU");
+#endif
 	if (IsYouReadTheFileData())
 	{
-		std::sort(m_fileData.begin(), m_fileData.end(), [](const auto& element1, const auto& element2) {
+		std::sort(m_fileData.begin(), m_fileData.end(), [&](const auto& element1, const auto& element2) {
 			const auto result = std::mismatch(element1.cbegin(), element1.cend(), element2.cbegin(), element2.cend(),
-			[](const auto& char1, const auto& char2) {
-					bool isTrue = std::tolower(char1) == std::tolower(char2);
+			[&](const auto& char1, const auto& char2) {
+					bool isTrue = std::tolower(char1, loc) == std::tolower(char2, loc);
 					return isTrue;
 				});
-		return (result.second != element2.cend()) && (result.first == element1.cend() ||
-			std::tolower(*result.first) < std::tolower(*result.second));
+		if (aIsAscending)
+			return (result.second != element2.cend()) && (result.first == element1.cend() ||
+				std::tolower(*result.first, loc) < std::tolower(*result.second, loc));
+		else
+			return (result.second != element2.cend()) && (result.first == element1.cend() ||
+				std::tolower(*result.first, loc) > std::tolower(*result.second, loc));
 			});
 	}
 };
