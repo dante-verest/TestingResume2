@@ -4,8 +4,7 @@
 #include <vector>
 #include <clocale>
 #include <cstring>
-//#include <wchar.h>
-//#include <charconv>
+#include <wchar.h>
 #include <memory>
 #ifdef _WIN32
 #pragma warning(disable: 4996)
@@ -15,14 +14,12 @@
 
 namespace Files
 {
-	//template<typename SequenceContainer>
 	class FileParser
 	{
 	public:
 		using String = std::string;
 		using FileStream = std::fstream;
 	private:
-		const char* m_pFileName;
 		std::vector<String> m_fileData;
 		FileStream m_file;
 	public:
@@ -55,9 +52,5 @@ namespace Files
 	private:
 		bool IsYourFileOpen();
 		bool IsYouReadTheFileData();
-#ifdef _WIN32
-		String ANSItoUTF8(const String& ansistr, const std::locale& loc);
-		String UTF8toANSI(const String& utf8str, const std::locale& loc);
-#endif
 	};
 }
