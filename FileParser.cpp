@@ -159,10 +159,26 @@ void Files::FileParser::SortFileStrings(bool aIsAscending)
 			return s;
 		};
 		std::sort(m_fileData.begin(), m_fileData.end(), [&](auto& element1, auto& element2) {
-			if (aIsAscending)
-				return (toLower(element1, loc) < toLower(element2, loc));
+   char* element1charBefore = element1.data();
+   std::size_t element1charBeforeLength = element1.length;
+   std::unique_ptr<char> element1charAfter =
+std::make_unique<char>(new char[element1charBeforeLength + 1]);
+   icons(conv, &element1charBefore, &
+element1charBeforeLength,&element1charAfter, &(
+element1charBeforeLength + 1));
+   
+   char* element2charBefore = element2.data();
+   std::size_t element2charBeforeLength = element1.length;
+   std::unique_ptr<char> element2charAfter =
+std::make_unique<char>(new char[element2charBeforeLength + 1]);
+   icons(conv, &element2charBefore, &
+element2charBeforeLength,&element2charAfter, &(
+element2charBeforeLength + 1));
+
+if (aIsAscending)
+				return (toLower(element1charAfter, loc) < toLower(element2charAfter, loc));
 			else
-				return (toLower(element1, loc) > toLower(element2, loc));
+				return (toLower(element1charAfter, loc) > toLower(element2charAfter, loc));
 		});
 		iconv_close(conv);
 	};
