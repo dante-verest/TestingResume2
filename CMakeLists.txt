@@ -12,7 +12,15 @@ endif()
 project ("TestTask")
 
 # Добавьте источник в исполняемый файл этого проекта.
+set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/libiconv-1.17")
+include_directories("${LIB_PATH}/include")
+if(UNIX)
+	find_library(LIBICONV NAMES libiconv.so.2.6.1 "${LIB_PATH}/lib/.libs")
+elseif(WIN32)
+	find_library(LIBICONV NAMES libiconv.dll "${LIB_PATH}/lib/.libs")
+endif()
 add_executable (TestTask "TestTask.cpp" "TestTask.h" "FileParser.h" "FileParser.cpp")
+#message(${LIBICONV})
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET TestTask PROPERTY CXX_STANDARD 20)
@@ -20,11 +28,9 @@ endif()
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
 
-include_directories("${CMAKE_SOURCE_DIR}/libs/libiconv-1.17/include")
-find_library(LIBICONV libiconv "${CMAKE_SOURCE_DIR}/libs/libiconv-1.17/lib/.libs")
-target_link_libraries(TestTask &{LIBICONV})
+#if(!MSVC)
 
-if(!MSVC)
-add_compile_options(-std=gnu++20)
-add_compile_options(-Wall -Wextra -W -ansi -pedantic -g -ggdb -c -o)
-endif()
+#add_compile_options(-std=gnu++20)
+#add_compile_options(-Wall -Wextra -W -ansi -pedantic -g -ggdb -c -o -lm)
+#endif()
+target_link_libraries(TestTask ${LIBICONV})
