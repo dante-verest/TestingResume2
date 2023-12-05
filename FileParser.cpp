@@ -1,6 +1,5 @@
 ﻿#include "FileParser.h"
 #include <iostream>
-#include <algorithm>
 #include <filesystem>
 #include "iconv.h"
 #include <codecvt>
@@ -118,7 +117,7 @@ void Files::FileParser::WriteToFile()
 	for (const auto& string : m_fileData)
 		m_file << string << std::endl;
 };
-void Files::FileParser::DeleteWords(int argc, const char** argv)
+void Files::FileParser::DeleteWords(int argc, char** argv)
 {
 	String utf8str;
 	std::size_t startPos = 0, i = 0, argvLength = 0;
@@ -127,32 +126,45 @@ void Files::FileParser::DeleteWords(int argc, const char** argv)
 		for (auto fileString = m_fileData.begin(); fileString != m_fileData.end(); ++fileString)
 		{
 			if(argc > 1)
-				for (i = 0; i < argc; i++)
+				for (i = 1; i < argc; i++)
 				{
 #ifdef _WIN32
+					// ввод с терминала Windows в кодировке Windows-1251 (CP1251)
 					char str[100];
 					wchar_t wstr[50];
 					MultiByteToWideChar(1251, MB_PRECOMPOSED, argv[i], -1, wstr, sizeof(wstr) / sizeof(wstr[0]));
 					WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, sizeof(str) / sizeof(str[0]), 0, 0);
-					utf8str = str;
+					utf8str = std::move(str);
+
+					// не читает, получаемая строка остаётся неизменной (нулевой)
+					//char* argv_ = argv[i];
+					//std::size_t lenArgv_ = sizeof(argv[i]) / sizeof(argv[i][0]);
+					//char argv__[50]{ "" };
+					//char* a = argv__;
+					//std::size_t lenA = sizeof(argv__) / sizeof(argv__[0]);
+					//libiconv_t conv = libiconv_open("CP1251", "UTF-8");
+					//std::wcout << libiconv(conv, &argv_, &lenArgv_, &a, &lenA) << std::endl;
+					//libiconv_close(conv);
+					//utf8str = a;
 #elif __linux__
+					// с Линукса же в UTF-8
 					utf8str = argv[i];
 #endif
-					argvLength = utf8str.size();
+					argvLength = utf8str.length();
 					startPos = fileString->find(utf8str);
 					if (startPos == String::npos)
 						continue;
 					else
 						while (startPos != String::npos)
 						{
-							if (std::isspace(fileString->at(startPos + argvLength)))
+							if ((startPos + argvLength) < fileString->length() && 
+								std::isspace(fileString->at(startPos + argvLength)))
 								fileString->erase(startPos, argvLength + 1);
 							else
 								fileString->erase(startPos, argvLength);
 							startPos = fileString->find(utf8str, startPos + argvLength);
 						};
 				}
-
 		}
 	}
 };
@@ -169,61 +181,26 @@ void Files::FileParser::DeleteEmptyStrings()
 };
 void Files::FileParser::SortFileStrings(bool aIsAscending)
 {
-	//using FromChar = char;
-	//using ToChar = char;
 	std::wstring element1UTF16;
 	std::wstring element2UTF16;
-	std::locale loc;
+	// нужно сбросить локаль, иначе начнуться кидаться исключения, особенно приколько с линуксом,
+	// там при наличии в /etc/locale.gen нужной кодировки всё-равно её не видит
+	std::locale loc = std::locale("");
 	if (IsYouReadTheFileData())
 	{
-		//libiconv_t conv;
-#ifdef _WIN32
-		//conv = libiconv_open("UTF-8", "CP1251");
-		loc = std::locale("");
-#elif __linux__
-		//conv = libiconv_open("UTF-8", "UTF-16");
-		loc = std::locale("");
-#endif
 		auto toLower = [&](std::wstring& s, const std::locale& loc) {
 			std::transform(s.begin(), s.end(), s.begin(),
 				[&loc](wchar_t c) { return std::tolower(c, loc); });
 			return s;
 		};
-		//auto test = std::vector<std::wstring>{
-		//	L"Кот был красив. Кот был яркий, как огонь, очень рыжий, даже оранжевый.",
-		//	L"У кота было белое брюшко.Кот крался за синичкой.Синичка, ничего не",
-		//	L"подозревая, скакала по ступеньке.Синичке было весело в тот весенний",
-		//	L"денёк.Синичка радостно тренькала.Кот напрягся для прыжка.Кот прыгнул,",
-		//	L"кот промахнулся.",
-		//	L" ",
-		//	L"",
-		//	L"your Type",
-		//	L"Type or paste your content here Type or paste your content here Type",
-		//	L"or paste your content here Type or paste your content here Type or paste your content here"
-		//};
 		std::sort(m_fileData.begin(), m_fileData.end(), [&](auto& element1, auto& element2) {
-   char* element1charBefore = element1.data();
-   std::size_t element1charBeforeLength = element1.length;
-   std::unique_ptr<char> element1charAfter =
-std::make_unique<char>(new char[element1charBeforeLength + 1]);
-   icons(conv, &element1charBefore, &
-element1charBeforeLength,&element1charAfter, &(
-element1charBeforeLength + 1));
-   
-   char* element2charBefore = element2.data();
-   std::size_t element2charBeforeLength = element1.length;
-   std::unique_ptr<char> element2charAfter =
-std::make_unique<char>(new char[element2charBeforeLength + 1]);
-   icons(conv, &element2charBefore, &
-element2charBeforeLength,&element2charAfter, &(
-element2charBeforeLength + 1));
-
-if (aIsAscending)
-				return (toLower(element1charAfter, loc) < toLower(element2charAfter, loc));
+			element1UTF16 = UTF8toUTF16(element1);
+			element2UTF16 = UTF8toUTF16(element2);
+			if (aIsAscending)
+				return (toLower(element1UTF16, loc) < toLower(element2UTF16, loc));
 			else
-				return (toLower(element1, loc) > toLower(element2, loc));
-		});
-		iconv_close(conv);
-	};
+				return (toLower(element1UTF16, loc) > toLower(element2UTF16, loc));
+			});
+	}
 };
 

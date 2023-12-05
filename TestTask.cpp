@@ -20,13 +20,14 @@ int main(int argc, char* argv[])
 	file->ReadFromFile();
 	file->CloseFile();
 	file->ShowFileData();
-
-	const int argc_ = 2;
-	const char *argv_[argc_] = { "Type", "Кот" };
-
-	file->DeleteWords(argc_, argv_);
+	file->DeleteWords(argc, argv);
 	file->DeleteEmptyStrings();
 	file->SortFileStrings();
+#ifdef _WIN32
+	std::wcout << std::endl;
+#elif __linux__
+	std::cout << std::endl;
+#endif
 	file->ShowFileData();
 	file->OpenFile("./NewTestFile.txt", std::ios_base::out | std::ios_base::trunc);
 	file->WriteToFile();

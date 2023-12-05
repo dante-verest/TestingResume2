@@ -12,6 +12,8 @@ endif()
 project ("TestTask")
 
 # Добавьте источник в исполняемый файл этого проекта.
+# подключение библиотеки libiconv.
+# в отличие от Eigen, её нужно собирать в бинарник, а не ограничиваться просто исходниками
 set(LIB_PATH "${CMAKE_SOURCE_DIR}/libs/libiconv-1.17")
 include_directories("${LIB_PATH}/include")
 if(UNIX)
@@ -27,10 +29,4 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
-
-#if(!MSVC)
-
-#add_compile_options(-std=gnu++20)
-#add_compile_options(-Wall -Wextra -W -ansi -pedantic -g -ggdb -c -o -lm)
-#endif()
 target_link_libraries(TestTask ${LIBICONV})

@@ -46,7 +46,7 @@ namespace Files
 		// удалить пустые строки
 		void DeleteEmptyStrings();
 		// удалить слово в содержимом файла
-		void DeleteWords(int argc, const char** argv);
+		void DeleteWords(int argc, char** argv);
 		// отсортировать строки содержимого файла
 		void SortFileStrings(bool aIsAscending = true);
 	private:
