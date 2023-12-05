@@ -52,6 +52,5 @@ namespace Files
 	private:
 		bool IsYourFileOpen();
 		bool IsYouReadTheFileData();
-		std::wstring UTF8toUTF16(const String& element);
 	};
 }
