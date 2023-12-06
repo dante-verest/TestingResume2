@@ -4,7 +4,6 @@
 #include <vector>
 #include <clocale>
 #include <cstring>
-#include <wchar.h>
 #include <memory>
 #ifdef _WIN32
 #pragma warning(disable: 4996)
@@ -46,12 +45,12 @@ namespace Files
 		// удалить пустые строки
 		void DeleteEmptyStrings();
 		// удалить слово в содержимом файла
-		void DeleteWords(int argc, char** argv);
+		void DeleteWords(const std::vector<std::string>& argv);
 		// отсортировать строки содержимого файла
 		void SortFileStrings(bool aIsAscending = true);
 	private:
 		bool IsYourFileOpen();
 		bool IsYouReadTheFileData();
-		std::wstring UTF8toUTF16(const String& element);
+		std::wstring UTF8toUTF16(const std::string& element);
 	};
 }

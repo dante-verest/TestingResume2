@@ -1,7 +1,7 @@
 ﻿#include "FileParser.h"
+#include "iconv.h"
 #include <iostream>
 #include <filesystem>
-#include "iconv.h"
 #include <codecvt>
 
 Files::FileParser::FileParser() 
@@ -57,7 +57,7 @@ bool Files::FileParser::IsYouReadTheFileData()
 		return false;
 	}
 };
-std::wstring Files::FileParser::UTF8toUTF16(const FileParser::String& element)
+std::wstring Files::FileParser::UTF8toUTF16(const std::string& element)
 {
 	static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 	return converter.from_bytes(element);
@@ -117,54 +117,54 @@ void Files::FileParser::WriteToFile()
 	for (const auto& string : m_fileData)
 		m_file << string << std::endl;
 };
-void Files::FileParser::DeleteWords(int argc, char** argv)
+void Files::FileParser::DeleteWords(const std::vector<std::string>& argv)
 {
 	String utf8str;
 	std::size_t startPos = 0, i = 0, argvLength = 0;
+	std::size_t argc = argv.size();
 	if (IsYouReadTheFileData())
 	{
 		for (auto fileString = m_fileData.begin(); fileString != m_fileData.end(); ++fileString)
 		{
-			if(argc > 1)
-				for (i = 1; i < argc; i++)
-				{
+			for (i = 0; i < argc; i++)
+			{
 #ifdef _WIN32
-					// ввод с терминала Windows в кодировке Windows-1251 (CP1251)
-					char str[100];
-					wchar_t wstr[50];
-					MultiByteToWideChar(1251, MB_PRECOMPOSED, argv[i], -1, wstr, sizeof(wstr) / sizeof(wstr[0]));
-					WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, sizeof(str) / sizeof(str[0]), 0, 0);
-					utf8str = std::move(str);
+				// ввод с терминала Windows в кодировке Windows-1251 (CP1251)
+				char str[100];
+				wchar_t wstr[50];
+				MultiByteToWideChar(1251, MB_PRECOMPOSED, argv[i].data(), -1, wstr, sizeof(wstr) / sizeof(wstr[0]));
+				WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, sizeof(str) / sizeof(str[0]), 0, 0);
+				utf8str = std::move(str);
 
-					// не читает, получаемая строка остаётся неизменной (нулевой)
-					//char* argv_ = argv[i];
-					//std::size_t lenArgv_ = sizeof(argv[i]) / sizeof(argv[i][0]);
-					//char argv__[50]{ "" };
-					//char* a = argv__;
-					//std::size_t lenA = sizeof(argv__) / sizeof(argv__[0]);
-					//libiconv_t conv = libiconv_open("CP1251", "UTF-8");
-					//std::wcout << libiconv(conv, &argv_, &lenArgv_, &a, &lenA) << std::endl;
-					//libiconv_close(conv);
-					//utf8str = a;
+				// не читает, получаемая строка остаётся неизменной (нулевой)
+				//char* argv_ = argv[i];
+				//std::size_t lenArgv_ = sizeof(argv[i]) / sizeof(argv[i][0]);
+				//char argv__[50]{ "" };
+				//char* a = argv__;
+				//std::size_t lenA = sizeof(argv__) / sizeof(argv__[0]);
+				//libiconv_t conv = libiconv_open("CP1251", "UTF-8");
+				//std::wcout << libiconv(conv, &argv_, &lenArgv_, &a, &lenA) << std::endl;
+				//libiconv_close(conv);
+				//utf8str = a;
 #elif __linux__
-					// с Линукса же в UTF-8
-					utf8str = argv[i];
+				// с Линукса же в UTF-8
+				utf8str = argv[i];
 #endif
-					argvLength = utf8str.length();
-					startPos = fileString->find(utf8str);
-					if (startPos == String::npos)
-						continue;
-					else
-						while (startPos != String::npos)
-						{
-							if ((startPos + argvLength) < fileString->length() && 
-								std::isspace(fileString->at(startPos + argvLength)))
-								fileString->erase(startPos, argvLength + 1);
-							else
-								fileString->erase(startPos, argvLength);
-							startPos = fileString->find(utf8str, startPos + argvLength);
-						};
-				}
+				argvLength = utf8str.length();
+				startPos = fileString->find(utf8str);
+				if (startPos == String::npos)
+					continue;
+				else
+					while (startPos != String::npos)
+					{
+						if ((startPos + argvLength) < fileString->length() &&
+							std::isspace(fileString->at(startPos + argvLength)))
+							fileString->erase(startPos, argvLength + 1);
+						else
+							fileString->erase(startPos, argvLength);
+						startPos = fileString->find(utf8str, startPos + argvLength);
+					};
+			}
 		}
 	}
 };
@@ -183,7 +183,7 @@ void Files::FileParser::SortFileStrings(bool aIsAscending)
 {
 	std::wstring element1UTF16;
 	std::wstring element2UTF16;
-	// нужно сбросить локаль, иначе начнуться кидаться исключения, особенно приколько с линуксом,
+	// нужно сбросить локаль, иначе начнут кидаться исключения, особенно приколько с Линуксом,
 	// там при наличии в /etc/locale.gen нужной кодировки всё-равно её не видит
 	std::locale loc = std::locale("");
 	if (IsYouReadTheFileData())
